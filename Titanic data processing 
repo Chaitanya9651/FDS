@@ -1,0 +1,159 @@
+# ==================== TITANIC - Data Preprocessing ====================
+print("\n" + "="*50)
+print("TITANIC DATASET - DATA PREPROCESSING")
+print("="*50)
+
+# Reload Titanic dataset
+titanic = sns.load_dataset('titanic')
+print(f"\nOriginal dataset shape: {titanic.shape}")
+
+# 1. Handling Missing Values
+print("\n" + "-"*30)
+print("1. HANDLING MISSING VALUES")
+print("-"*30)
+
+print("\nMissing values before handling:")
+print(titanic.isnull().sum())
+
+# Create a copy for preprocessing
+titanic_processed = titanic.copy()
+
+# a. Drop columns with too many missing values
+# 'deck' has many missing values
+titanic_processed = titanic_processed.drop('deck', axis=1)
+print(f"\nAfter dropping 'deck' column: {titanic_processed.shape}")
+
+# b. Impute missing 'age' with median
+age_median = titanic_processed['age'].median()
+titanic_processed['age'].fillna(age_median, inplace=True)
+print(f"Imputed 'age' with median: {age_median:.2f}")
+
+# c. Impute missing 'embarked' with mode
+embarked_mode = titanic_processed['embarked'].mode()[0]
+titanic_processed['embarked'].fillna(embarked_mode, inplace=True)
+print(f"Imputed 'embarked' with mode: {embarked_mode}")
+
+# d. Impute missing 'embark_town' with mode
+embark_town_mode = titanic_processed['embark_town'].mode()[0]
+titanic_processed['embark_town'].fillna(embark_town_mode, inplace=True)
+print(f"Imputed 'embark_town' with mode: {embark_town_mode}")
+
+print("\nMissing values after handling:")
+print(titanic_processed.isnull().sum())
+
+# 2. Encoding Categorical Variables
+print("\n" + "-"*30)
+print("2. ENCODING CATEGORICAL VARIABLES")
+print("-"*30)
+
+# a. Label Encoding for ordinal/nominal
+le = LabelEncoder()
+titanic_processed['sex_encoded'] = le.fit_transform(titanic_processed['sex'])
+print(f"\nSex encoding: {dict(zip(le.classes_, le.transform(le.classes_)))}")
+
+# b. One-Hot Encoding for nominal
+titanic_encoded = pd.get_dummies(titanic_processed, columns=['embarked', 'class', 'who', 'alive'])
+print(f"\nAfter one-hot encoding: {titanic_encoded.shape}")
+
+# c. Binary encoding
+titanic_processed['alone_encoded'] = titanic_processed['alone'].astype(int)
+print(f"\nAlone encoded as binary: {titanic_processed['alone_encoded'].unique()}")
+
+# 3. Feature Scaling
+print("\n" + "-"*30)
+print("3. FEATURE SCALING")
+print("-"*30)
+
+# Select numeric columns for scaling
+numeric_cols = ['age', 'fare', 'sibsp', 'parch']
+
+# a. Standardization (Z-score)
+scaler_standard = StandardScaler()
+titanic_scaled_standard = titanic_processed.copy()
+titanic_scaled_standard[numeric_cols] = scaler_standard.fit_transform(
+    titanic_processed[numeric_cols]
+)
+print("\nStandardization (mean=0, std=1):")
+print(titanic_scaled_standard[numeric_cols].describe())
+
+# b. Min-Max Normalization
+scaler_minmax = MinMaxScaler()
+titanic_scaled_minmax = titanic_processed.copy()
+titanic_scaled_minmax[numeric_cols] = scaler_minmax.fit_transform(
+    titanic_processed[numeric_cols]
+)
+print("\nMin-Max Normalization (range 0-1):")
+print(titanic_scaled_minmax[numeric_cols].describe())
+
+# 4. Feature Engineering
+print("\n" + "-"*30)
+print("4. FEATURE ENGINEERING")
+print("-"*30)
+
+# a. Create family size feature
+titanic_processed['family_size'] = titanic_processed['sibsp'] + titanic_processed['parch'] + 1
+print(f"\nCreated 'family_size' feature (min: {titanic_processed['family_size'].min()}, max: {titanic_processed['family_size'].max()})")
+
+# b. Create age categories
+titanic_processed['age_category'] = pd.cut(titanic_processed['age'], 
+                                          bins=[0, 12, 18, 35, 60, 100],
+                                          labels=['Child', 'Teen', 'Young Adult', 'Adult', 'Senior'])
+print("\nAge categories created:")
+print(titanic_processed['age_category'].value_counts())
+
+# c. Create fare per person
+titanic_processed['fare_per_person'] = titanic_processed['fare'] / titanic_processed['family_size']
+print(f"\nCreated 'fare_per_person' feature (mean: {titanic_processed['fare_per_person'].mean():.2f})")
+
+# 5. Handling Outliers
+print("\n" + "-"*30)
+print("5. HANDLING OUTLIERS")
+print("-"*30)
+
+# Detect outliers using IQR method for age
+Q1 = titanic_processed['age'].quantile(0.25)
+Q3 = titanic_processed['age'].quantile(0.75)
+IQR = Q3 - Q1
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+outliers_age = titanic_processed[(titanic_processed['age'] < lower_bound) | 
+                                 (titanic_processed['age'] > upper_bound)]
+print(f"\nAge outliers detected: {len(outliers_age)}")
+print(f"Outlier bounds: [{lower_bound:.2f}, {upper_bound:.2f}]")
+
+# Capping outliers (Winsorization)
+titanic_processed['age_capped'] = titanic_processed['age'].clip(lower_bound, upper_bound)
+print(f"\nAfter capping age outliers: {titanic_processed['age_capped'].min():.2f} to {titanic_processed['age_capped'].max():.2f}")
+
+# 6. Feature Selection
+print("\n" + "-"*30)
+print("6. FEATURE SELECTION (Correlation Analysis)")
+print("-"*30)
+
+# Calculate correlation with target 'survived'
+correlations = titanic_processed[['survived', 'age', 'fare', 'sibsp', 'parch', 'family_size']].corr()
+print("\nCorrelation with 'survived':")
+print(correlations['survived'].sort_values(ascending=False))
+
+# 7. Data Split
+print("\n" + "-"*30)
+print("7. DATA SPLIT")
+print("-"*30)
+
+from sklearn.model_selection import train_test_split
+
+# Prepare features and target
+X = titanic_processed[['age', 'fare', 'sibsp', 'parch', 'sex_encoded', 'family_size']]
+y = titanic_processed['survived']
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+print(f"\nTraining set size: {X_train.shape}")
+print(f"Test set size: {X_test.shape}")
+print(f"Training set class distribution:\n{y_train.value_counts()}")
+print(f"Test set class distribution:\n{y_test.value_counts()}")
+
+print("\n" + "="*50)
+print("DATA PREPROCESSING COMPLETE")
+print("="*50)
