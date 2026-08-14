@@ -1,0 +1,112 @@
+# ==================== IRIS DATASET - Measures of Central Tendency ====================
+print("\n" + "="*50)
+print("IRIS DATASET - MEASURES OF CENTRAL TENDENCY")
+print("="*50)
+
+# Load Iris dataset
+iris = sns.load_dataset('iris')
+print(f"\nDataset shape: {iris.shape}")
+print("\nFirst 5 rows:")
+print(iris.head())
+
+print("\nStatistical Summary:")
+print(iris.describe())
+
+# Calculate central tendency measures for each numeric attribute
+numeric_cols = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width']
+
+print("\n" + "="*50)
+print("CENTRAL TENDENCY MEASURES FOR EACH SPECIES")
+print("="*50)
+
+# 1. For each species
+for species in iris['species'].unique():
+    print(f"\n{'='*40}")
+    print(f"SPECIES: {species.upper()}")
+    print('='*40)
+    
+    species_data = iris[iris['species'] == species]
+    
+    for col in numeric_cols:
+        data = species_data[col]
+        print(f"\n{col.replace('_', ' ').title()}:")
+        print(f"  Mean: {data.mean():.4f}")
+        print(f"  Median: {data.median():.4f}")
+        print(f"  Mode: {data.mode().values[0]:.4f}")
+        print(f"  Geometric Mean: {stats.gmean(data):.4f}")
+        print(f"  Harmonic Mean: {stats.hmean(data):.4f}")
+
+# 2. For entire dataset
+print("\n" + "="*50)
+print("CENTRAL TENDENCY MEASURES FOR ENTIRE DATASET")
+print("="*50)
+
+for col in numeric_cols:
+    data = iris[col]
+    print(f"\n{col.replace('_', ' ').title()}:")
+    print(f"  Mean: {data.mean():.4f}")
+    print(f"  Median: {data.median():.4f}")
+    print(f"  Mode: {data.mode().values[0]:.4f}")
+    print(f"  Geometric Mean: {stats.gmean(data):.4f}")
+    print(f"  Harmonic Mean: {stats.hmean(data):.4f}")
+    print(f"  Trimmed Mean (10%): {stats.trim_mean(data, 0.1):.4f}")
+
+# 3. Visualization of central tendency
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+for idx, col in enumerate(numeric_cols):
+    ax = axes[idx // 2, idx % 2]
+    
+    # Histogram
+    ax.hist(iris[col], bins=20, alpha=0.6, color='lightblue', edgecolor='black')
+    
+    # Add vertical lines for mean and median
+    mean_val = iris[col].mean()
+    median_val = iris[col].median()
+    mode_val = iris[col].mode().values[0]
+    
+    ax.axvline(mean_val, color='red', linestyle='-', linewidth=2, label=f'Mean: {mean_val:.2f}')
+    ax.axvline(median_val, color='green', linestyle='--', linewidth=2, label=f'Median: {median_val:.2f}')
+    ax.axvline(mode_val, color='blue', linestyle=':', linewidth=2, label=f'Mode: {mode_val:.2f}')
+    
+    ax.set_title(f'{col.replace("_", " ").title()} Distribution')
+    ax.set_xlabel(col.replace('_', ' ').title())
+    ax.set_ylabel('Frequency')
+    ax.legend()
+
+plt.tight_layout()
+plt.show()
+
+# 4. Box plots by species
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+for idx, col in enumerate(numeric_cols):
+    ax = axes[idx // 2, idx % 2]
+    iris.boxplot(column=col, by='species', ax=ax)
+    ax.set_title(f'{col.replace("_", " ").title()} by Species')
+    ax.set_xlabel('Species')
+    ax.set_ylabel(col.replace('_', ' ').title())
+
+plt.tight_layout()
+plt.show()
+
+# 5. Relationship between mean and median (skewness indicator)
+print("\n" + "="*50)
+print("SKEWNESS INDICATOR (Mean vs Median)")
+print("="*50)
+
+for col in numeric_cols:
+    mean_val = iris[col].mean()
+    median_val = iris[col].median()
+    diff = mean_val - median_val
+    
+    if abs(diff) < 0.1:
+        skew_indicator = "Approximately Symmetric"
+    elif diff > 0:
+        skew_indicator = "Positively Skewed (Right-tailed)"
+    else:
+        skew_indicator = "Negatively Skewed (Left-tailed)"
+    
+    print(f"\n{col.replace('_', ' ').title()}:")
+    print(f"  Mean - Median = {diff:.4f}")
+    print(f"  Indication: {skew_indicator}")
