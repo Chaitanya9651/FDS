@@ -1,0 +1,155 @@
+# ==================== AUTOMOBILE DATASET - Visualizations ====================
+print("\n" + "="*50)
+print("AUTOMOBILE DATASET - VISUALIZATIONS")
+print("="*50)
+
+# Load Automobile dataset (from UCI or create sample data)
+# If you have the actual dataset, use: df = pd.read_csv('automobile.csv')
+# Creating sample automobile data for demonstration
+np.random.seed(42)
+n_cars = 200
+
+automobile_data = {
+    'make': np.random.choice(['Toyota', 'Honda', 'Ford', 'Chevrolet', 'BMW', 'Mercedes'], n_cars),
+    'fuel_type': np.random.choice(['gas', 'diesel', 'electric'], n_cars, p=[0.7, 0.2, 0.1]),
+    'aspiration': np.random.choice(['std', 'turbo'], n_cars),
+    'num_doors': np.random.choice([2, 4], n_cars, p=[0.3, 0.7]),
+    'body_style': np.random.choice(['sedan', 'hatchback', 'wagon', 'suv', 'convertible'], n_cars),
+    'drive_wheels': np.random.choice(['fwd', 'rwd', '4wd'], n_cars),
+    'engine_location': np.random.choice(['front', 'rear'], n_cars, p=[0.95, 0.05]),
+    'wheel_base': np.random.normal(100, 10, n_cars),
+    'length': np.random.normal(180, 15, n_cars),
+    'width': np.random.normal(70, 5, n_cars),
+    'height': np.random.normal(55, 5, n_cars),
+    'curb_weight': np.random.normal(3000, 500, n_cars),
+    'engine_type': np.random.choice(['dohc', 'ohcv', 'ohc', 'rotor'], n_cars),
+    'num_cylinders': np.random.choice([4, 6, 8], n_cars, p=[0.6, 0.3, 0.1]),
+    'engine_size': np.random.normal(200, 50, n_cars),
+    'fuel_system': np.random.choice(['mpfi', 'spfi', 'carb'], n_cars),
+    'bore': np.random.normal(3.5, 0.5, n_cars),
+    'stroke': np.random.normal(3.0, 0.5, n_cars),
+    'compression_ratio': np.random.normal(9.5, 1.5, n_cars),
+    'horsepower': np.random.normal(150, 50, n_cars),
+    'peak_rpm': np.random.normal(5500, 500, n_cars),
+    'city_mpg': np.random.normal(25, 8, n_cars),
+    'highway_mpg': np.random.normal(30, 8, n_cars),
+    'price': np.random.normal(25000, 10000, n_cars)
+}
+
+auto_df = pd.DataFrame(automobile_data)
+print(f"\nAutomobile dataset shape: {auto_df.shape}")
+print("\nFirst 5 rows:")
+print(auto_df.head())
+
+# Create visualization plots
+fig = plt.figure(figsize=(18, 12))
+
+# 1. Distribution of Price
+ax1 = fig.add_subplot(3, 4, 1)
+auto_df['price'].hist(bins=30, color='skyblue', edgecolor='black', ax=ax1)
+ax1.set_title('Price Distribution')
+ax1.set_xlabel('Price ($)')
+ax1.set_ylabel('Frequency')
+
+# 2. Distribution of Horsepower
+ax2 = fig.add_subplot(3, 4, 2)
+auto_df['horsepower'].hist(bins=30, color='lightgreen', edgecolor='black', ax=ax2)
+ax2.set_title('Horsepower Distribution')
+ax2.set_xlabel('Horsepower')
+ax2.set_ylabel('Frequency')
+
+# 3. Box plot of price by body style
+ax3 = fig.add_subplot(3, 4, 3)
+auto_df.boxplot(column='price', by='body_style', ax=ax3)
+ax3.set_title('Price by Body Style')
+ax3.set_xlabel('Body Style')
+ax3.set_ylabel('Price ($)')
+plt.xticks(rotation=45)
+
+# 4. Scatter plot: Horsepower vs Price
+ax4 = fig.add_subplot(3, 4, 4)
+ax4.scatter(auto_df['horsepower'], auto_df['price'], alpha=0.6, c='red')
+ax4.set_title('Horsepower vs Price')
+ax4.set_xlabel('Horsepower')
+ax4.set_ylabel('Price ($)')
+
+# 5. Scatter plot: Engine Size vs Price
+ax5 = fig.add_subplot(3, 4, 5)
+ax5.scatter(auto_df['engine_size'], auto_df['price'], alpha=0.6, c='blue')
+ax5.set_title('Engine Size vs Price')
+ax5.set_xlabel('Engine Size')
+ax5.set_ylabel('Price ($)')
+
+# 6. Correlation heatmap (numeric features)
+ax6 = fig.add_subplot(3, 4, 6)
+numeric_cols = ['wheel_base', 'length', 'width', 'curb_weight', 'engine_size', 
+                'horsepower', 'city_mpg', 'highway_mpg', 'price']
+correlation_matrix = auto_df[numeric_cols].corr()
+im = ax6.imshow(correlation_matrix, cmap='coolwarm', aspect='auto')
+ax6.set_xticks(range(len(numeric_cols)))
+ax6.set_yticks(range(len(numeric_cols)))
+ax6.set_xticklabels(numeric_cols, rotation=90, fontsize=8)
+ax6.set_yticklabels(numeric_cols, fontsize=8)
+ax6.set_title('Correlation Heatmap')
+plt.colorbar(im, ax=ax6)
+
+# 7. Bar plot: Average price by make
+ax7 = fig.add_subplot(3, 4, 7)
+auto_df.groupby('make')['price'].mean().sort_values().plot(kind='barh', ax=ax7, color='orange')
+ax7.set_title('Average Price by Make')
+ax7.set_xlabel('Average Price ($)')
+ax7.set_ylabel('Make')
+
+# 8. Violin plot: City MPG by fuel type
+ax8 = fig.add_subplot(3, 4, 8)
+# Filter for gas and diesel only for cleaner plot
+temp_df = auto_df[auto_df['fuel_type'].isin(['gas', 'diesel'])]
+temp_df.boxplot(column='city_mpg', by='fuel_type', ax=ax8)
+ax8.set_title('City MPG by Fuel Type')
+ax8.set_xlabel('Fuel Type')
+ax8.set_ylabel('City MPG')
+
+# 9. Pairplot subset (using pairplot from seaborn)
+# Since pairplot uses its own figure, we'll create it separately
+plt.subplot(3, 4, 9)
+# Simplified scatter matrix manually
+sns.pairplot(auto_df[['horsepower', 'city_mpg', 'price']].sample(100))
+plt.suptitle('Pairplot of Key Features', y=1.02)
+
+# 10-12. Additional plots
+ax10 = fig.add_subplot(3, 4, 10)
+auto_df['num_cylinders'].value_counts().plot(kind='bar', ax=ax10, color='purple')
+ax10.set_title('Number of Cylinders Distribution')
+ax10.set_xlabel('Cylinders')
+ax10.set_ylabel('Count')
+
+ax11 = fig.add_subplot(3, 4, 11)
+auto_df.groupby('drive_wheels')['horsepower'].mean().plot(kind='bar', ax=ax11, color='teal')
+ax11.set_title('Average Horsepower by Drive Type')
+ax11.set_xlabel('Drive Wheels')
+ax11.set_ylabel('Average Horsepower')
+
+ax12 = fig.add_subplot(3, 4, 12)
+auto_df['city_mpg'].plot(kind='kde', ax=ax12, label='City MPG', color='blue')
+auto_df['highway_mpg'].plot(kind='kde', ax=ax12, label='Highway MPG', color='red')
+ax12.set_title('MPG Distribution Comparison')
+ax12.set_xlabel('MPG')
+ax12.set_ylabel('Density')
+ax12.legend()
+
+plt.tight_layout()
+plt.show()
+
+# Additional visualization: 3D scatter plot (optional)
+from mpl_toolkits.mplot3d import Axes3D
+
+fig = plt.figure(figsize=(10, 8))
+ax = fig.add_subplot(111, projection='3d')
+scatter = ax.scatter(auto_df['horsepower'], auto_df['engine_size'], 
+                    auto_df['price'], c=auto_df['price'], cmap='viridis')
+ax.set_xlabel('Horsepower')
+ax.set_ylabel('Engine Size')
+ax.set_zlabel('Price ($)')
+ax.set_title('3D Scatter: Horsepower, Engine Size, Price')
+plt.colorbar(scatter)
+plt.show()
