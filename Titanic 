@@ -1,0 +1,223 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler
+from sklearn.impute import SimpleImputer
+
+# ==================== TITANIC: Part A - Read Dataset & EDA ====================
+print("="*50)
+print("TITANIC DATASET - EDA")
+print("="*50)
+
+# Load Titanic dataset
+titanic = sns.load_dataset('titanic')
+
+# Display basic info
+print("\nDataset Shape:", titanic.shape)
+print("\nFirst 5 rows:")
+print(titanic.head())
+
+print("\nDataset Info:")
+print(titanic.info())
+
+print("\nStatistical Summary:")
+print(titanic.describe())
+
+print("\nMissing Values:")
+print(titanic.isnull().sum())
+
+# EDA Visualizations
+fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+
+# 1. Survival count
+titanic['survived'].value_counts().plot(kind='bar', ax=axes[0,0], color=['red', 'green'])
+axes[0,0].set_title('Survival Count')
+axes[0,0].set_xlabel('Survived (0=No, 1=Yes)')
+axes[0,0].set_ylabel('Count')
+
+# 2. Gender distribution
+titanic['sex'].value_counts().plot(kind='pie', ax=axes[0,1], autopct='%1.1f%%')
+axes[0,1].set_title('Gender Distribution')
+
+# 3. Passenger class distribution
+titanic['pclass'].value_counts().sort_index().plot(kind='bar', ax=axes[0,2], color='skyblue')
+axes[0,2].set_title('Passenger Class Distribution')
+axes[0,2].set_xlabel('Class')
+axes[0,2].set_ylabel('Count')
+
+# 4. Age distribution
+titanic['age'].dropna().hist(bins=30, ax=axes[1,0], color='lightgreen', edgecolor='black')
+axes[1,0].set_title('Age Distribution')
+axes[1,0].set_xlabel('Age')
+axes[1,0].set_ylabel('Frequency')
+
+# 5. Fare distribution
+titanic['fare'].hist(bins=30, ax=axes[1,1], color='lightcoral', edgecolor='black')
+axes[1,1].set_title('Fare Distribution')
+axes[1,1].set_xlabel('Fare')
+axes[1,1].set_ylabel('Frequency')
+
+# 6. Survival by gender
+pd.crosstab(titanic['sex'], titanic['survived']).plot(kind='bar', ax=axes[1,2])
+axes[1,2].set_title('Survival by Gender')
+axes[1,2].set_xlabel('Gender')
+axes[1,2].set_ylabel('Count')
+axes[1,2].legend(['Not Survived', 'Survived'])
+
+plt.tight_layout()
+plt.show()
+
+# ==================== TITANIC: Part B - Identify Attribute Types ====================
+print("\n" + "="*50)
+print("ATTRIBUTE TYPES IN TITANIC DATASET")
+print("="*50)
+
+# Nominal attributes (categorical without order)
+nominal_attrs = ['sex', 'embarked', 'class', 'who', 'adult_male', 'deck', 'embark_town', 'alive', 'alone']
+print("\nNominal Attributes:", nominal_attrs)
+
+# Numeric attributes (continuous or discrete numeric)
+numeric_attrs = ['age', 'fare', 'pclass', 'sibsp', 'parch']
+print("\nNumeric Attributes:", numeric_attrs)
+
+# Binary attributes (only two categories)
+binary_attrs = ['survived', 'sex', 'adult_male', 'alive', 'alone']
+print("\nBinary Attributes:", binary_attrs)
+
+# ==================== TITANIC: Part C - Dissimilarity for Nominal Attributes ====================
+print("\n" + "="*50)
+print("DISSIMILARITY MEASURES FOR NOMINAL ATTRIBUTES")
+print("="*50)
+
+# Select two nominal attributes: 'sex' and 'embarked'
+print("\nMeasuring dissimilarity between 'sex' and 'embarked':")
+
+# Create contingency table
+contingency = pd.crosstab(titanic['sex'], titanic['embarked'])
+print("\nContingency Table:")
+print(contingency)
+
+# Simple matching coefficient (SMC) for nominal attributes
+def nominal_dissimilarity(attr1, attr2):
+    """Calculate dissimilarity between two nominal attributes"""
+    # Create dummy variables
+    dummies1 = pd.get_dummies(attr1)
+    dummies2 = pd.get_dummies(attr2)
+    
+    # Combine and calculate mismatch proportion
+    combined = pd.concat([dummies1, dummies2], axis=1)
+    
+    # For each row, check if categories match
+    # This is simplified - for true nominal dissimilarity, we use matching coefficient
+    matches = 0
+    total = len(attr1)
+    
+    for i in range(total):
+        # Get categories for each attribute
+        cat1 = attr1.iloc[i] if hasattr(attr1, 'iloc') else attr1[i]
+        cat2 = attr2.iloc[i] if hasattr(attr2, 'iloc') else attr2[i]
+        
+        # Simple matching: compare if categories are exactly same
+        # Since they're different attributes, we can't directly compare
+        # Instead, we compute dissimilarity based on co-occurrence patterns
+    
+    # For nominal attributes, we use chi-square based distance or simple matching
+    # Let's use a different approach - Gini impurity or entropy-based
+    from scipy.stats import chi2_contingency
+    
+    chi2, p, dof, expected = chi2_contingency(contingency)
+    print(f"\nChi-square statistic: {chi2:.4f}")
+    print(f"P-value: {p:.4f}")
+    print(f"Degrees of freedom: {dof}")
+    
+    # Normalize chi-square to get dissimilarity measure
+    # Cramer's V (ranges from 0 to 1)
+    n = contingency.sum().sum()
+    cramers_v = np.sqrt(chi2 / (n * min(contingency.shape[0]-1, contingency.shape[1]-1)))
+    print(f"\nCramer's V (dissimilarity measure): {cramers_v:.4f}")
+    print("Interpretation: 0 = no association, 1 = perfect association")
+    
+    return cramers_v
+
+dissimilarity = nominal_dissimilarity(titanic['sex'], titanic['embarked'])
+
+# Another example: 'class' and 'who'
+print("\n" + "-"*30)
+print("Measuring dissimilarity between 'class' and 'who':")
+contingency2 = pd.crosstab(titanic['class'], titanic['who'])
+print("\nContingency Table:")
+print(contingency2)
+
+chi2_2, p_2, dof_2, expected_2 = chi2_contingency(contingency2)
+cramers_v_2 = np.sqrt(chi2_2 / (contingency2.sum().sum() * min(contingency2.shape[0]-1, contingency2.shape[1]-1)))
+print(f"\nCramer's V (dissimilarity): {cramers_v_2:.4f}")
+
+# ==================== TITANIC: Part D - Dissimilarity for Numeric Attributes ====================
+print("\n" + "="*50)
+print("DISSIMILARITY MEASURES FOR NUMERIC ATTRIBUTES")
+print("="*50)
+
+# Select two numeric attributes: 'age' and 'fare'
+print("\nMeasuring dissimilarity between 'age' and 'fare':")
+
+# Extract numeric attributes and remove NaN
+age_fare_df = titanic[['age', 'fare']].dropna()
+age = age_fare_df['age'].values
+fare = age_fare_df['fare'].values
+
+# 1. Euclidean distance (normalized)
+from sklearn.preprocessing import StandardScaler
+
+# Normalize the data
+scaler = StandardScaler()
+age_fare_normalized = scaler.fit_transform(age_fare_df)
+
+# Calculate Euclidean distance for each pair (sample-wise)
+euclidean_distances = np.sqrt(np.sum((age_fare_normalized)**2, axis=1))
+print(f"\n1. Euclidean Distance (normalized):")
+print(f"   Mean distance: {np.mean(euclidean_distances):.4f}")
+print(f"   Std distance: {np.std(euclidean_distances):.4f}")
+print(f"   Min distance: {np.min(euclidean_distances):.4f}")
+print(f"   Max distance: {np.max(euclidean_distances):.4f}")
+
+# 2. Manhattan distance (normalized)
+manhattan_distances = np.sum(np.abs(age_fare_normalized), axis=1)
+print(f"\n2. Manhattan Distance (normalized):")
+print(f"   Mean distance: {np.mean(manhattan_distances):.4f}")
+print(f"   Std distance: {np.std(manhattan_distances):.4f}")
+print(f"   Min distance: {np.min(manhattan_distances):.4f}")
+print(f"   Max distance: {np.max(manhattan_distances):.4f}")
+
+# 3. Correlation-based dissimilarity
+correlation = np.corrcoef(age, fare)[0, 1]
+dissimilarity_corr = 1 - abs(correlation)
+print(f"\n3. Correlation-based Dissimilarity:")
+print(f"   Correlation coefficient: {correlation:.4f}")
+print(f"   Dissimilarity (1 - |r|): {dissimilarity_corr:.4f}")
+
+# 4. Cosine dissimilarity
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+cosine_sim = cosine_similarity(age, fare)
+cosine_dissim = 1 - abs(cosine_sim)
+print(f"\n4. Cosine Dissimilarity:")
+print(f"   Cosine similarity: {cosine_sim:.4f}")
+print(f"   Cosine dissimilarity: {cosine_dissim:.4f}")
+
+# Example with 'sibsp' and 'parch'
+print("\n" + "-"*30)
+print("Measuring dissimilarity between 'sibsp' and 'parch':")
+sibsp_parch_df = titanic[['sibsp', 'parch']].dropna()
+sibsp = sibsp_parch_df['sibsp'].values
+parch = sibsp_parch_df['parch'].values
+
+sibsp_parch_normalized = scaler.fit_transform(sibsp_parch_df)
+euclidean_dist_2 = np.sqrt(np.sum((sibsp_parch_normalized)**2, axis=1))
+print(f"\nMean Euclidean distance: {np.mean(euclidean_dist_2):.4f}")
+
+correlation_2 = np.corrcoef(sibsp, parch)[0, 1]
+print(f"Correlation coefficient: {correlation_2:.4f}")
+print(f"Dissimilarity (1 - |r|): {1 - abs(correlation_2):.4f}")
