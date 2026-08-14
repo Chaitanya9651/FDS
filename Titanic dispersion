@@ -1,0 +1,182 @@
+# ==================== TITANIC - Measures of Dispersion and Distribution Shape ====================
+print("\n" + "="*50)
+print("TITANIC DATASET - MEASURES OF DISPERSION")
+print("="*50)
+
+# Reload Titanic dataset and handle missing values
+titanic = sns.load_dataset('titanic')
+titanic_clean = titanic.copy()
+titanic_clean['age'].fillna(titanic_clean['age'].median(), inplace=True)
+titanic_clean['fare'].fillna(titanic_clean['fare'].median(), inplace=True)
+
+numeric_cols = ['age', 'fare', 'sibsp', 'parch']
+
+print("\n" + "="*50)
+print("DISPERSION MEASURES FOR NUMERIC ATTRIBUTES")
+print("="*50)
+
+for col in numeric_cols:
+    data = titanic_clean[col]
+    print(f"\n{col.replace('_', ' ').title()}:")
+    print(f"  Range: {data.max() - data.min():.4f}")
+    print(f"  Variance: {data.var():.4f}")
+    print(f"  Standard Deviation: {data.std():.4f}")
+    print(f"  Interquartile Range (IQR): {data.quantile(0.75) - data.quantile(0.25):.4f}")
+    print(f"  Mean Absolute Deviation: {np.mean(np.abs(data - data.mean())):.4f}")
+    print(f"  Coefficient of Variation (CV): {(data.std() / data.mean() * 100):.2f}%")
+    
+    # Quartiles
+    print(f"  Q1 (25th percentile): {data.quantile(0.25):.4f}")
+    print(f"  Q2 (Median): {data.quantile(0.50):.4f}")
+    print(f"  Q3 (75th percentile): {data.quantile(0.75):.4f}")
+
+# 2. Distribution shape analysis
+print("\n" + "="*50)
+print("DISTRIBUTION SHAPE ANALYSIS")
+print("="*50)
+
+for col in numeric_cols:
+    data = titanic_clean[col].dropna()
+    
+    # Skewness
+    skewness = data.skew()
+    print(f"\n{col.replace('_', ' ').title()}:")
+    print(f"  Skewness: {skewness:.4f}")
+    
+    if skewness > 1:
+        print(f"  → Highly positively skewed (right-tailed)")
+    elif 0.5 < skewness <= 1:
+        print(f"  → Moderately positively skewed")
+    elif -0.5 < skewness < 0.5:
+        print(f"  → Approximately symmetric")
+    elif -1 < skewness < -0.5:
+        print(f"  → Moderately negatively skewed")
+    else:
+        print(f"  → Highly negatively skewed (left-tailed)")
+    
+    # Kurtosis
+    kurtosis = data.kurtosis()
+    print(f"  Kurtosis: {kurtosis:.4f}")
+    
+    if kurtosis > 3:
+        print(f"  → Leptokurtic (heavy-tailed, peaked)")
+    elif kurtosis < 3:
+        print(f"  → Platykurtic (light-tailed, flat)")
+    else:
+        print(f"  → Mesokurtic (normal-like)")
+    
+    # Coefficient of Skewness (Pearson's)
+    pearson_skew = 3 * (data.mean() - data.median()) / data.std()
+    print(f"  Pearson's Coefficient of Skewness: {pearson_skew:.4f}")
+
+# 3. Visualization of distribution shape
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+for idx, col in enumerate(numeric_cols):
+    ax = axes[idx // 2, idx % 2]
+    data = titanic_clean[col].dropna()
+    
+    # Histogram with KDE
+    ax.hist(data, bins=30, density=True, alpha=0.7, color='lightblue', edgecolor='black')
+    data.plot(kind='kde', ax=ax, color='red', linewidth=2)
+    
+    # Add statistics
+    mean_val = data.mean()
+    median_val = data.median()
+    std_val = data.std()
+    
+    ax.axvline(mean_val, color='green', linestyle='-', linewidth=2, label=f'Mean: {mean_val:.2f}')
+    ax.axvline(median_val, color='blue', linestyle='--', linewidth=2, label=f'Median: {median_val:.2f}')
+    ax.axvline(mean_val - std_val, color='orange', linestyle=':', linewidth=1, alpha=0.7)
+    ax.axvline(mean_val + std_val, color='orange', linestyle=':', linewidth=1, alpha=0.7)
+    
+    ax.set_title(f'{col.replace("_", " ").title()} Distribution\nSkewness: {data.skew():.2f}, Kurtosis: {data.kurtosis():.2f}')
+    ax.set_xlabel(col.replace('_', ' ').title())
+    ax.set_ylabel('Density')
+    ax.legend()
+
+plt.tight_layout()
+plt.show()
+
+# 4. Box plots for each numeric attribute
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+for idx, col in enumerate(numeric_cols):
+    ax = axes[idx // 2, idx % 2]
+    data = titanic_clean[col]
+    
+    # Box plot with outliers
+    bp = ax.boxplot(data, patch_artist=True, widths=0.5)
+    bp['boxes'][0].set_facecolor('lightblue')
+    
+    ax.set_title(f'Box Plot of {col.replace("_", " ").title()}')
+    ax.set_ylabel(col.replace('_', ' ').title())
+    ax.set_xticklabels([''])
+    
+    # Add text with statistics
+    stats_text = f'Q1: {data.quantile(0.25):.2f}\nQ2: {data.quantile(0.50):.2f}\nQ3: {data.quantile(0.75):.2f}\nIQR: {data.quantile(0.75) - data.quantile(0.25):.2f}'
+    ax.text(1.1, data.quantile(0.50), stats_text, transform=ax.transData, fontsize=9,
+            bbox=dict(boxstyle="round,pad=0.3", facecolor='white', alpha=0.8))
+
+plt.tight_layout()
+plt.show()
+
+# 5. Q-Q plots to check normality
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+for idx, col in enumerate(numeric_cols):
+    ax = axes[idx // 2, idx % 2]
+    data = titanic_clean[col].dropna()
+    
+    # Create Q-Q plot
+    stats.probplot(data, dist="norm", plot=ax)
+    ax.set_title(f'Q-Q Plot of {col.replace("_", " ").title()}')
+
+plt.tight_layout()
+plt.show()
+
+# 6. Cumulative Distribution Function (CDF)
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+for idx, col in enumerate(numeric_cols):
+    ax = axes[idx // 2, idx % 2]
+    data = titanic_clean[col].dropna()
+    
+    # Sort data
+    sorted_data = np.sort(data)
+    cdf = np.arange(1, len(sorted_data) + 1) / len(sorted_data)
+    
+    ax.plot(sorted_data, cdf, linewidth=2)
+    ax.set_title(f'CDF of {col.replace("_", " ").title()}')
+    ax.set_xlabel(col.replace('_', ' ').title())
+    ax.set_ylabel('Cumulative Probability')
+    ax.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# 7. Compare distributions by survival
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+for idx, col in enumerate(numeric_cols):
+    ax = axes[idx // 2, idx % 2]
+    
+    survived = titanic_clean[titanic_clean['survived'] == 1][col].dropna()
+    not_survived = titanic_clean[titanic_clean['survived'] == 0][col].dropna()
+    
+    # Plot KDE for both groups
+    survived.plot(kind='kde', ax=ax, label='Survived', color='green', linewidth=2)
+    not_survived.plot(kind='kde', ax=ax, label='Not Survived', color='red', linewidth=2)
+    
+    ax.set_title(f'{col.replace("_", " ").title()} Distribution by Survival')
+    ax.set_xlabel(col.replace('_', ' ').title())
+    ax.set_ylabel('Density')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+print("\n" + "="*50)
+print("ANALYSIS COMPLETE")
+print("="*50)
